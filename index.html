@@ -1,0 +1,40 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
+  <head>
+	<script type="text/javascript" src="d3.min.js"></script>
+	<script type="text/javascript" src="underscore-min.js"></script>
+	<script type="text/javascript" src="whatever.js"></script>
+	<link rel="stylesheet" type="text/css" href="a3.css">
+  </head>
+  <body>
+  <div id="container">
+	<div id="title"></div>
+	<div id="thebuttons">
+    <input name="winsButton" 
+           type="button" 
+           value="Show Wins / Draws Only" 
+           onclick="updateData(1)" />
+	<input name="lossesButton" 
+           type="button" 
+           value="Show Losses Only" 
+           onclick="updateData(0)" />
+	<input name="bothButton" 
+           type="button" 
+           value="Show Everything" 
+           onclick="updateData(2)" />
+	</div>
+	<div id="chart"></div>
+	<div id="fischer"></div>
+	<div id="carlsen"></div>
+  </div>
+	<script type="text/javascript">
+		drawtitle();
+		drawmainboard(99,99,2);
+		drawFischer(99,99);
+		drawCarlsen(99,99);
+	</script>
+  </body>
+</html>
+
+
