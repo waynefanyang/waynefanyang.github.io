@@ -15,7 +15,7 @@ function drawtitle(){
 				   ;
 	var title = d3.select("#title")
 				  .append("text")
-				  .text("Click on a square to view the probability of moves of a knight from that square.  Click on any hi-lighted square to clear the selection.  Below the interactive board, you can see the move probabilities for two famous grandmasters.")
+				  .text("Click on a square to view the probability of moves of a knight from that square.  On the selected position, the average number of turns spent on that position without moving is displayed.  Click on any hi-lighted square to clear the selection.  Below the interactive board, you can see the move probabilities for two famous grandmasters.")
 				  .attr("font-family","sans-serif")
 				  .attr("font-size","40px");
 }
@@ -66,8 +66,8 @@ var fischerreader = d3.csv("fischer.csv", function(d){
 
  // compute empirical probabilities for given to_rank,to_file, from_rank,from_file, and data source.
 function probability(trank,tfile,frank,ffile,thedata){
-	var count = 0
-	var total = 0
+	var count = 0;
+	var total = 0;
 	for (i = 0; i < thedata.length; i++){
 		if((thedata[i].from_rank == frank) && (thedata[i].from_file == ffile)){
 			total += 1
@@ -83,6 +83,23 @@ function probability(trank,tfile,frank,ffile,thedata){
 		return 0;
 	}
 }
+
+// computes average number of turns spent on that square
+function avgtime(frank,ffile,thedata){
+	var count = 0;
+	var total = 0.0;
+	for (i = 0; i < thedata.length; i++){
+		if((thedata[i].from_rank == frank) && (thedata[i].from_file == ffile)){
+			total += thedata[i].timespent;
+			count += 1;
+	}}
+	if (count > 0){
+		return (total/count);
+	} else {
+		return 0;
+	}
+}
+
 // checks for legal moves
 function islegalmove(trank,tfile,frank,ffile){
 	var v2h1 = (Math.abs(trank - frank) == 2 && Math.abs(tfile - ffile) == 1);
@@ -106,8 +123,8 @@ function updateData(newresults){
 	globalresults = newresults;
 	d3.selectAll("svg").remove();
 	drawmainboard(globalrank,globalfile,globalresults);
-	drawFischer(globalrank,globalfile);
-	drawCarlsen(globalrank,globalfile);
+	drawFischer(globalrank,globalfile,globalresults);
+	drawCarlsen(globalrank,globalfile,globalresults);
 }
 
 // the main board function
@@ -165,15 +182,15 @@ function drawmainboard(from_rank,from_file,allowedresults){
 				 							if(d3.select(this).property("clicked")){
 				 								d3.selectAll("svg").remove();
 				 								drawmainboard(99,99,globalresults);
-				 								drawFischer(99,99);
-												drawCarlsen(99,99);
+				 								drawFischer(99,99,globalresults);
+												drawCarlsen(99,99,globalresults);
 				 							} else {
 				 								d3.selectAll("svg").remove();
 				 								globalrank = d.rank;
 				 								globalfile = d.file;
 				 								drawmainboard(globalrank,globalfile,globalresults);
-				 								drawFischer(globalrank,globalfile);
-												drawCarlsen(globalrank,globalfile);}})
+				 								drawFischer(globalrank,globalfile,globalresults);
+												drawCarlsen(globalrank,globalfile,globalresults);}})
 
 				 .style("fill", function(d){
 				 					if((d.file === from_file) && (d.rank === from_rank)){
@@ -191,7 +208,7 @@ function drawmainboard(from_rank,from_file,allowedresults){
 				 })
 				 .style("stroke", '#555');
 				 
-	var labels = row.selectAll("g")
+	var Problabels = row.selectAll("g")
 					.append("text")
 					.attr("x",function(d){return d.x})
 					.attr("y",function(d){return d.y})
@@ -205,6 +222,39 @@ function drawmainboard(from_rank,from_file,allowedresults){
 					.attr("fill","white")
 					.attr("font-family","sans-serif")
 					.attr("font-size","25px");
+					
+	var TimeValue = row.selectAll("g")
+						.append("text")
+						.attr("x",function(d){return d.x})
+						.attr("y",function(d){return d.y})
+						.attr("dy","1em")
+						.attr("dx","0.2em")
+						.text(function(d){
+							if((d.rank == from_rank) && (d.file == from_file)){
+								return ""+d.time.toFixed(1);
+							} else {
+								return "";
+							}
+						})
+						.attr("fill","white")
+						.attr("font-family","sans-serif")
+						.attr("font-size","25px");
+	var TimeLabel = row.selectAll("g")
+						.append("text")
+						.attr("x",function(d){return d.x})
+						.attr("y",function(d){return d.y})
+						.attr("dy","2.5em")
+						.attr("dx","0.3em")
+						.text(function(d){
+							if((d.rank == from_rank) && (d.file == from_file)){
+								return "turns";
+							} else {
+								return "";
+							}
+						})
+						.attr("fill","white")
+						.attr("font-family","sans-serif")
+						.attr("font-size","20px");
 	var Ranklabels = row.selectAll("g")
 					  .append("text")
 					  .attr("x",function(d){return d.x})
@@ -256,23 +306,14 @@ function drawmainboard(from_rank,from_file,allowedresults){
 						}});
 }
 // Function to draw a board using either Carlsen or Fischer data
-function drawFischer(from_rank,from_file){
-	var fischerData = processGMData(230,0,50,fischerArray,from_rank,from_file);
+function drawFischer(from_rank,from_file,allowedresults){
+	var fischerData = processGMData(230,0,50,fischerArray,from_rank,from_file,allowedresults);
 	var fischerGrid = d3.select("#fischer").append("svg")
 						.attr("width",30000)
 						.attr("height",400)
 						.attr("x",100)
 						.attr("y",100)
 						.attr("class","chart");
-
-	var testRect = fischerGrid.select("body")
-					.append("rect")
-					.attr("width",800)
-					.attr("height",800)
-					.attr("x",200)
-					.attr("y",200)
-					.style("fill","black");
-						
 
 	var fischerRow = fischerGrid.selectAll(".row")
 						.data(fischerData)
@@ -327,18 +368,33 @@ function drawFischer(from_rank,from_file){
 					.attr("fill","white")
 					.attr("font-family","sans-serif")
 					.attr("font-size","12px");
+	var TimeValue = fischerRow.selectAll("g")
+					.append("text")
+					.attr("x",function(d){return d.x})
+					.attr("y",function(d){return d.y})
+					.attr("dy","1.5em")
+					.attr("dx","0.3em")
+					.text(function(d){
+						if((d.file === from_file) && (d.rank === from_rank)){
+							return ""+d.time.toFixed(2);
+						}
+						})
+					.attr("fill","white")
+					.attr("font-family","sans-serif")
+					.attr("font-size","12px");
 
-		var fischerTitle = fischerRow.selectAll("g")
+	var fischerTitle = fischerRow.selectAll("g")
 								  .append("text")
 								  .attr("x",0)
 								  .attr("y",30)
 								  .text(function(d){return "Bobby Fischer's Move Probabilities"})
 								  .attr("font-family","sans-serif")
 								  .attr("font-size","15px");
+		
 }
 
-function drawCarlsen(from_rank,from_file){
-	var carlsenData = processGMData(230,0,50,carlsenArray,from_rank,from_file);
+function drawCarlsen(from_rank,from_file,allowedresults){
+	var carlsenData = processGMData(230,0,50,carlsenArray,from_rank,from_file,allowedresults);
 	var carlsenGrid = d3.select("#carlsen").append("svg")
 						.attr("width",30000)
 						.attr("height",400)
@@ -399,7 +455,20 @@ function drawCarlsen(from_rank,from_file){
 					.attr("fill","white")
 					.attr("font-family","sans-serif")
 					.attr("font-size","12px");
-
+	var TimeValue = carlsenRow.selectAll("g")
+					.append("text")
+					.attr("x",function(d){return d.x})
+					.attr("y",function(d){return d.y})
+					.attr("dy","1.5em")
+					.attr("dx","0.3em")
+					.text(function(d){
+						if((d.file === from_file) && (d.rank === from_rank)){
+							return ""+d.time.toFixed(2);
+						}
+						})
+					.attr("fill","white")
+					.attr("font-family","sans-serif")
+					.attr("font-size","12px");
 		var carlsenTitle = carlsenRow.selectAll("g")
 								  .append("text")
 								  .attr("x",0)
@@ -434,12 +503,14 @@ function processData(gridWidth,from_rank,from_file,allowedresults){
 		data.push(new Array());
 		for(var file = 0; file < 8; file++){
 			if(rank == from_rank && file == from_file){
+				var temptime = avgtime(rank,file,subset);
 				data[rank].push({rank: rank,
 								file: file,
 								width: gridItemWidth,
 								height: gridItemHeight,
 								x: xpos,
-								y: ypos
+								y: ypos,
+								time: temptime
 								});
 			} else if(islegalmove(rank,file,from_rank,from_file)){
 				var tempprob = probability(rank,file,from_rank,from_file,subset);
@@ -467,7 +538,7 @@ function processData(gridWidth,from_rank,from_file,allowedresults){
 	return data;
 }
 
-function processGMData(gridWidth,xoffset,yoffset,datasource,from_rank,from_file){
+function processGMData(gridWidth,xoffset,yoffset,datasource,from_rank,from_file,allowedresults){
 	var data = new Array();
 	var gridItemWidth = gridWidth/8;
 	var gridItemHeight = gridWidth/8;
@@ -481,18 +552,29 @@ function processGMData(gridWidth,xoffset,yoffset,datasource,from_rank,from_file)
 	for (var rank = 0; rank < 8; rank++){
 		data.push(new Array());
 		for(var file = 0; file < 8; file++){
-			var subset1 = filterbylegalmoves(datasource,from_rank,from_file);
-			var subset = _.filter(subset1,function(d){return (d.win == 0);})
+	var subset1 = filterbylegalmoves(datasource,from_rank,from_file);
+			var subset = new Array()
+			if(allowedresults == 0){
+				console.log("something works");
+				subset = _.filter(subset1,function(d){return (d.win == 0);});
+			} else if(allowedresults == 1){
+				console.log("something else works");
+				subset = _.filter(subset1,function(d){return (d.win == 1);});
+			} else {
+				subset = subset1;
+			}
 			if(rank == from_rank && file == from_file){
+				var temptime = avgtime(rank,file,subset);
 				data[rank].push({rank: rank,
 								file: file,
 								width: gridItemWidth,
 								height: gridItemHeight,
 								x: xpos,
-								y: ypos
+								y: ypos,
+								time: temptime
 								});
 			} else if(islegalmove(rank,file,from_rank,from_file)){
-				var tempprob = probability(rank,file,from_rank,from_file,datasource);
+				var tempprob = probability(rank,file,from_rank,from_file,subset);
 				data[rank].push({rank: rank,
 								file: file,
 								width: gridItemWidth,
