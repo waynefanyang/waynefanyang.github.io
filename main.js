@@ -33,7 +33,6 @@ var datareader = d3.csv("moves2.csv", function(d){
 		'to_rank' : +d.toRank,
 		'to_file' : +d.toFile,
 		'timespent' : +d.timeSpent,
-		'rating' : +d.ELO,
 		'win' : +d.win
 	};
 }, function(error, rows) {
@@ -243,6 +242,18 @@ function drawmainboard(from_rank,from_file,allowedresults){
 						.text(function(d){return "Move Probabilities for Knights"})
 						.attr("font-family","sans-serif")
 						.attr("font-size","30px");	
+	var Showing = row.select("g")
+						.append("text")
+						.attr("x",0)
+						.attr("y",48)
+						.text(function(d){
+							if(allowedresults == 0){
+								return "Showing Only Losses";
+						} else if(allowedresults == 1){
+								return "Showing Only Wins/Draws";
+						} else {
+								return "Showing All Outcomes";
+						}});
 }
 // Function to draw a board using either Carlsen or Fischer data
 function drawFischer(from_rank,from_file){
